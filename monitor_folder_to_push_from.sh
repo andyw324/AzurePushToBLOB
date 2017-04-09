@@ -64,14 +64,14 @@ inotifywait -m -e CLOSE,CREATE $watchdir | while read path action file; do
 		
 		## remove completion file
 		rm $watchdir/$file
-		ts=$(date +"%C%y%m%d%H%M%S")
-        	echo "$ts :: file: $file :: Remove completion file :: $path/$file">>$logfile
+		tsArch=$(date +"%C%y%m%d%H%M%S")
+        	echo "$tsArch :: file: $file :: Remove completion file :: $path/$file">>$logfile
 
 		## create timestamped directories
 		#mkdir $movetodir/$ts
-		mkdir $archivedir/$ts
+		mkdir $archivedir/$tsArch
 
-		echo "Archive directory created"
+		#echo "Archive directory created"
 		ts=$(date +"%C%y%m%d%H%M%S")
         	echo "$ts :: Archive directory created: $archivedir/$ts">>$logfile
 
@@ -90,11 +90,11 @@ inotifywait -m -e CLOSE,CREATE $watchdir | while read path action file; do
 		## Move files
 		ts=$(date +"%C%y%m%d%H%M%S")
 		for f in `ls $watchdir`; do
-			mv $watchdir/$f $archivedir/$ts
-			echo "$ts :: file: $f :: Moving file to: $archivedir/$ts">>$logfile
+			mv $watchdir/$f $archivedir/$tsArch/$f
+			echo "$ts :: file: $f :: Moving file to: $archivedir/$tsArch">>$logfile
 		done
 		ts=$(date +"%C%y%m%d%H%M%S")
-		echo "$ts :: Completed file move to: $archivedir/$ts"
+		echo "$ts :: Completed file move to: $archivedir/$tsArch"
 	fi
 
 done
