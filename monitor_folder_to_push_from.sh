@@ -1,0 +1,102 @@
+#!/bin/bash
+## code adapted from
+## http://jensd.be/248/linux/use-inotify-tools-on-centos-7-or-rhel-7-to-watch-files-and-directories-for-events
+
+# Parse the command-line arguments
+while [ "$#" -gt "0" ]; do
+  case "$1" in
+    -ac|--account-name)
+      ACCOUNTNAME="$2"
+      shift 2
+    ;;
+    -wd|--watch-dir)
+      watchdir="$2"
+      shift 2
+    ;;
+    -bn|--blob-name)
+      BLOBNAME="$2"
+      shift 2
+    ;;
+    -lg|--log-file)
+        logfile="$2"
+        shift 2
+    ;;
+    -cf|--complete-file)
+        completefile="$2"
+        shift 2
+    ;;
+    -ad|--archive-dir)
+        archivedir="$2"
+        shift 2
+    ;;
+    -md|--moveto-dir)
+        movetodir="$2"
+        shift 2
+    ;;
+    -us|--upload-script)
+        UPLOADTOBLOBSCRIPTPATH="$2"
+        shift 2
+    ;;    
+    -c|--container)
+        CONTAINER="$2"
+        shift 2
+    ;;    
+    -*|--*)
+      # Unknown option found
+      echo "Unknown option $1."
+
+      exit 1
+    ;;  
+    *)
+      CMD="$1"
+      break
+    ;;
+  esac
+done
+
+inotifywait -m -e CLOSE,CREATE $watchdir | while read path action file; do
+        ts=$(date +"%C%y%m%d%H%M%S")
+        echo "$ts :: file: $file :: $action :: $path">>$logfile
+	## Allow files to land in incoming folder until a "completion" file is created.
+	## Creation file to trigger file transfers to BLOB and to the archive folder
+	if [[ $action == "CREATE" && $file == $completefile ]]; then
+		echo "File transfer completed"
+		
+		## remove completion file
+		rm $watchdir/$file
+		ts=$(date +"%C%y%m%d%H%M%S")
+        	echo "$ts :: file: $file :: Remove completion file :: $path/$file">>$logfile
+
+		## create timestamped directories
+		#mkdir $movetodir/$ts
+		mkdir $archivedir/$ts
+
+		echo "Archive directory created"
+		ts=$(date +"%C%y%m%d%H%M%S")
+        	echo "$ts :: Archive directory created: $archivedir/$ts">>$logfile
+
+		## copy files from landing zone to BLOB - replace code with azure CLI code
+		#cp $watchdir/* $movetodir/$ts
+		echo "Begin file upload"
+		for f in `ls $watchdir`; do
+			ts=$(date +"%C%y%m%d%H%M%S")
+        		echo "$ts :: file: $f :: Begining upload to blob storage container: $CONTAINER">>$logfile
+			$UPLOADTOBLOBSCRIPTPATH/automate_push_to_blob.sh --account-name $ACCOUNTNAME --container-name $CONTAINER --upload-file $watchdir/$f --blob-name "$ts-$f" --log-file $logfile
+		done
+
+		## generate list of files being moved into archive folder
+		#mvFiles="Moving `ls $watchdir`"
+		echo "Move files to archive directory"
+		## Move files
+		ts=$(date +"%C%y%m%d%H%M%S")
+		for f in `ls $watchdir`; do
+			mv $watchdir/$f $archivedir/$ts
+			echo "$ts :: file: $f :: Moving file to: $archivedir/$ts">>$logfile
+		done
+		ts=$(date +"%C%y%m%d%H%M%S")
+		echo "$ts :: Completed file move to: $archivedir/$ts"
+	fi
+
+done
+
+exit 0
