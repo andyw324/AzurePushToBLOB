@@ -79,7 +79,7 @@ inotifywait -m -e CLOSE,CREATE $watchdir | while read path action file; do
 		#cp $watchdir/* $movetodir/$ts
 		echo "Begin file upload"
 		for f in `ls $watchdir`; do
-			ts=$(date +"%C%y%m%d%H%M%S")
+			ts=$(date -d '+1 hour' +"%C%y%m%d%H%M%S")
         		echo "$ts :: file: $f :: Begining upload to blob storage container: $CONTAINER">>$logfile
 			$UPLOADTOBLOBSCRIPTPATH/automate_push_to_blob.sh --account-name $ACCOUNTNAME --container-name $CONTAINER --upload-file $watchdir/$f --blob-name "$ts-$f" --log-file $logfile
 		done
