@@ -41,6 +41,10 @@ while [ "$#" -gt "0" ]; do
         CONTAINER="$2"
         shift 2
     ;;    
+    -ta|--time-add)
+        TIMEADD="$2"
+        shift 2
+    ;;    
     -*|--*)
       # Unknown option found
       echo "Unknown option $1."
@@ -82,8 +86,38 @@ inotifywait -m -e CLOSE,CREATE $watchdir | while read path action file; do
 			
 			ts=$(date +"%C%y%m%d%H%M%S")
         	echo "$ts :: file: $f :: Begining upload to blob storage container: $CONTAINER">>$logfile
-			ts=$(date -d '+1 hour' +"%C%y%m%d%H%M%S")
-			$UPLOADTOBLOBSCRIPTPATH/automate_push_to_blob.sh --account-name $ACCOUNTNAME --container-name $CONTAINER --upload-file $watchdir/$f --blob-name "$ts-$f" --log-file $logfile
+			echo "TIMEADD = $TIMEADD"
+			case $TIMEADD in
+				"1 hour")
+					TSROUND=$(date -d '+1 hour' +"%C%y%m%d%H")
+					(( TSROUND *= 100 ))
+					#echo "1 hour - TSROUND = $TSROUND"
+					# TSYEAR=${TSROUND:0:4}
+					# TSMONTH=${TSROUND:4:2}
+					# TSDAY=${TSROUND:6:2}
+					# TSTIME=${TSROUND:(-4)}
+					# TSPATH="$TSYEAR/$TSMONTH/$TSDAY/$TSTIME/"
+					#echo "1 hour - TSROUND = $TSROUND - PATH = $TSPATH"
+				;;
+				"15 minute")
+					TSROUND=$(date +"%C%y%m%d%H%M")
+					(( TSROUND /= 15, TSROUND *= 15, TSROUND += 15 ))
+
+					#echo "15 minute - TSROUND = $TSROUND - PATH = $TSPATH"
+				;;
+				*)
+					TSROUND=$(date +"%C%y%m%d%H%M")
+					# TSPATH=""
+					echo "none - TSROUND = $TSROUND"
+				;;
+			esac
+			TSYEAR=${TSROUND:0:4}
+			TSMONTH=${TSROUND:4:2}
+			TSDAY=${TSROUND:6:2}
+			TSTIME=${TSROUND:(-4)}
+			TSPATH="$TSYEAR/$TSMONTH/$TSDAY/$TSTIME/"
+			#echo "TSROUND = $TSROUND"
+			$UPLOADTOBLOBSCRIPTPATH/automate_push_to_blob.sh --account-name $ACCOUNTNAME --container-name $CONTAINER --upload-file $watchdir/$f --blob-name "$TSPATH$TSROUND-$f" --log-file $logfile
 		done
 
 		## generate list of files being moved into archive folder
