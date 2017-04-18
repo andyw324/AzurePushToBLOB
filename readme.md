@@ -40,3 +40,8 @@ The `automate_push_to_blob.sh` pushes a single file (defined using `--upload-fil
 2. Generate a SAS token with an expiry date/time 5 minutes from current time
 3. Initiate file upload
 4. Log all sdouts
+
+## Notes
+Azure Data Factory cannot natively delete files from BLOB storage. To specify which "files" to Extract and Load into a Database, can specify a fixed filename with wildcards. It is not possible to dynamically generate a filename. However, can use "Partitioning" to dynamically define a "BLOB Folder". This is useful as specific files can be uploaded to a "Timestamped" BLOB Folder.
+
+The above code uploads files to a folder structure based on the timestamp using a `YYYY/MM/DD/HHMM` structure.
